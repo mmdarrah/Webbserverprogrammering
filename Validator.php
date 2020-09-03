@@ -323,10 +323,11 @@ class Pos_Validator
      * @param boolean $stripLow        Optional; strips ASCII values below 32; defaults to false.
      * @param boolean $stripHigh       Optional; strips ASCII values above 127; defaults to false.
      */
-    public function removeTags($fieldName, $encodeAmp = false, $preserveQuotes = false, $encodeLow = false, $encodeHigh = false, $stripLow = false, $stripHigh = false)
+    public function removeTags($fieldName, $encodeAmp = false, $preserveQuotes = false, $encodeLow = false, $encodeHigh = false, $stripLow = false, $stripHigh = false, $specialChars= false)
     {
+        
         // Check that another validation test has not been applied to the same input
-        $this->checkDuplicateFilter($fieldName);
+        //$this->checkDuplicateFilter($fieldName);
         // Set the filter options 
         $this->_filterArgs[$fieldName]['filter'] = FILTER_SANITIZE_STRING;
         // Multiple flags are set using the "binary or" operator
@@ -349,6 +350,9 @@ class Pos_Validator
         if ($stripHigh) {
             $this->_filterArgs[$fieldName]['flags'] |= FILTER_FLAG_STRIP_HIGH;
         }
+        if ($specialChars) {
+            $this->_filterArgs[$fieldName]['flags'] |= FILTER_SANITIZE_SPECIAL_CHARS;
+        }
     }
 
     /**
@@ -370,7 +374,7 @@ class Pos_Validator
      * @param boolean $stripLow        Optional; strips ASCII values below 32; defaults to false.
      * @param boolean $stripHigh       Optional; strips ASCII values above 127; defaults to false.
      */
-    public function removeTagsFromArray($fieldName, $encodeAmp = false, $preserveQuotes = false, $encodeLow = false, $encodeHigh = false, $stripLow = false, $stripHigh = false)
+    public function removeTagsFromArray($fieldName, $encodeAmp = false, $preserveQuotes = false, $encodeLow = false, $encodeHigh = false, $stripLow = false, $stripHigh = false, $specialChars= false)
     {
         // Check that another validation test has not been applied to the same input
         $this->checkDuplicateFilter($fieldName);
@@ -396,6 +400,9 @@ class Pos_Validator
         if ($stripHigh) {
             $this->_filterArgs[$fieldName]['flags'] |= FILTER_FLAG_STRIP_HIGH;
         }
+        if ($specialChars) {
+            $this->_filterArgs[$fieldName]['flags'] |= FILTER_SANITIZE_SPECIAL_CHARS;
+        }
     }
 
     /**
@@ -414,7 +421,8 @@ class Pos_Validator
     public function useEntities($fieldName, $isArray = false, $encodeHigh = false, $stripLow = false, $stripHigh = false)
     {
         // Check that another validation test has not been applied to the same input
-        $this->checkDuplicateFilter($fieldName);
+        //$this->checkDuplicateFilter($fieldName);
+        //echo $fieldName;
         // Set the filter options 
         $this->_filterArgs[$fieldName]['filter'] = FILTER_SANITIZE_SPECIAL_CHARS;
         $this->_filterArgs[$fieldName]['flags'] = 0;
@@ -455,6 +463,7 @@ class Pos_Validator
     {
         // Get the submitted value
         $text = trim($this->_submitted[$fieldName]);
+        
         // Make sure it's a string
         if (!is_string($text)) {
             throw new Exception("The checkTextLength() method can only be applied to strings; $fieldName is the wrong data type.");
@@ -481,6 +490,60 @@ class Pos_Validator
             }
         }
     }
+
+    
+    // check if the date in correct format
+    function validateDate($fieldName)
+    {
+        $date = trim($this->_submitted[$fieldName]);
+        $this->_filterArgs[$fieldName] = FILTER_VALIDATE_INT;
+        //echo $date;
+        // Make sure $date is a number
+        if (!is_numeric($date)) {
+            $this->_errors[$fieldName] = " Fail date format in ".$fieldName;
+        }
+
+        
+    }
+
+    //Checks the number of characters in the submitted value.
+    public function checkDateLength($fieldName, $min, $max)
+    {
+        // Get the submitted value
+        $date = trim($this->_submitted[$fieldName]);
+        
+        // Make sure it's not a string
+        if (is_string(!$date)) {
+            throw new Exception("The checkDateLength() method can only be applied to int; $fieldName is the wrong data type.");
+        }
+        // Make sure the second argument is a number
+        if (!is_numeric($min)) {
+            throw new Exception("The checkDateLength() method expects a number as the second argument (field name: $fieldName)");
+        }
+        // Make sure the third argument is a number
+        if (!is_numeric($max)) {
+            throw new Exception("The checkDateLength() method expects a number as the third argument (field name: $fieldName)");
+        }
+        // If the string is shorter than the minimum, create error message
+        if (strlen($date) < $min) {
+            // Check whether a valid maximum value has been set
+            if (is_numeric($max)) {
+                $this->_errors[$fieldName] = ucfirst($fieldName) . " must be in this format 20201212.";
+            } else {
+                $this->_errors[$fieldName] = ucfirst($fieldName) . " must be in this format 20201212.";
+            }
+        }
+        // If a maximum has been set, and the string is too long, create error message
+        if (is_numeric($max) && strlen($date) > $max) {
+            if ($min == 0) {
+                $this->_errors[$fieldName] = ucfirst($fieldName) . " must be in this format 20201212";
+            } else {
+                $this->_errors[$fieldName] = ucfirst($fieldName) . " must be in this format 20201212";
+            }
+        }
+    }
+
+   
 
     /**
      * This passes through the raw data as submitted.
@@ -594,6 +657,8 @@ class Pos_Validator
     {
         return $this->_errors;
     }
+
+  
 
     ############################################################################
     # PROTECTED METHODS                                                        #
